@@ -69,7 +69,7 @@ def run():
             percent_format = workbook.add_format({
                 "border": 1,
                 "align": "center",
-                "num_format": "0.0%"
+                "num_format": '0.0"%"'
             })
 
             total_format = workbook.add_format({
@@ -84,7 +84,7 @@ def run():
                 "bg_color": "#ADD8E6",
                 "border": 2,
                 "align": "center",
-                "num_format": "0.0%"
+                "num_format": '0.0"%"'
             })
 
             # Formattazione intestazioni e larghezza colonne
@@ -323,9 +323,10 @@ def run():
                 riepilogo["TT Trial"].astype(int)
             )
 
+            # Percentuale espressa su scala 0-100 (es. 25.0, non 0.25).
             riepilogo["Chiusura %"] = (
                 riepilogo["TT chiusi"] /
-                riepilogo["TT Trial"]
+                riepilogo["TT Trial"] * 100
             ).fillna(0)
 
             # ----------------------------------------------------
@@ -403,7 +404,7 @@ def run():
             riga_totale["TT chiusi"] = totale_chiusi
 
             riga_totale["Chiusura %"] = (
-                totale_chiusi / totale_trial
+                totale_chiusi / totale_trial * 100
                 if totale_trial
                 else 0
             )
@@ -474,15 +475,27 @@ def run():
                 "Tabella percentuale di chiusura per AT e Impresa"
             )
 
+            # Mostra AT una sola volta per gruppo, come nella
+            # tabella della Programmazione Trial.
+            riepilogo_visualizzato = riepilogo.copy()
+            maschera_totale = (
+                riepilogo_visualizzato["at"] == "Totale complessivo"
+            )
+            riepilogo_visualizzato.loc[
+                riepilogo_visualizzato["at"].duplicated()
+                & ~maschera_totale,
+                "at"
+            ] = ""
+
             formato_colonne = {
                 "at": st.column_config.TextColumn(
                     "AT",
-                    width=100
+                    width=135
                 ),
 
                 "Impresa": st.column_config.TextColumn(
                     "Impresa",
-                    width=230
+                    width=260
                 ),
 
                 "Risorse": st.column_config.NumberColumn(
@@ -508,7 +521,7 @@ def run():
             }
 
             st.dataframe(
-                riepilogo,
+                riepilogo_visualizzato,
                 use_container_width=False,
                 hide_index=True,
                 column_config=formato_colonne
@@ -530,7 +543,7 @@ def run():
                     color="at",
                     barmode="group",
                     text=grafico["Chiusura %"].map(
-                        lambda x: f"{x:.1%}"
+                        lambda x: f"{x:.1f}%"
                     ),
                     title=(
                         "Percentuale di chiusura Trial "
@@ -544,7 +557,7 @@ def run():
                 )
 
                 fig.update_layout(
-                    yaxis_tickformat=".0%",
+                    yaxis_ticksuffix="%",
                     yaxis_title="Chiusura %"
                 )
 
