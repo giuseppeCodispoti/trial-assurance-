@@ -509,7 +509,7 @@ def run():
                 ),
 
                 "TT chiusi": st.column_config.NumberColumn(
-                    "TT chiusi",
+                    "TT trial chiusi",
                     width=105
                 ),
 
@@ -531,7 +531,7 @@ def run():
             # 8. GRAFICO: PERCENTUALE DI CHIUSURA PER IMPRESA
             # ----------------------------------------------------
             grafico = riepilogo[
-                riepilogo["at"] != "Totale complessivo"
+                riepilogo["at"] != "Totale "
             ].copy()
 
             if not grafico.empty:
@@ -550,7 +550,7 @@ def run():
                         "per Impresa e AT"
                     ),
                     labels={
-                        "Chiusura %": "Chiusura",
+                        " %": "Chiusura",
                         "Impresa": "Impresa",
                         "at": "AT"
                     }
