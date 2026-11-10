@@ -573,6 +573,10 @@ def run():
 
 
 
+        except Exception as e:
+            st.error(f"Errore durante l'elaborazione dei file: {e}")
+
+    else:
         st.info(
             "Carica il dettaglio Excel Trial e il file Excel TT chiusi "
             "per calcolare la percentuale."
