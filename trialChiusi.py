@@ -478,12 +478,17 @@ def run():
             # Mostra AT una sola volta per gruppo, come nella
             # tabella della Programmazione Trial.
             riepilogo_visualizzato = riepilogo.copy()
-            maschera_totale = (
-                riepilogo_visualizzato["at"] == "Totale complessivo"
+            riepilogo_visualizzato["at"] = (
+                riepilogo_visualizzato["at"].fillna("").astype(str).str.strip()
             )
+            maschera_totale = (
+                riepilogo_visualizzato["at"].str.casefold()
+                == "totale complessivo"
+            )
+            maschera_dati = ~maschera_totale
             riepilogo_visualizzato.loc[
-                riepilogo_visualizzato["at"].duplicated()
-                & ~maschera_totale,
+                maschera_dati
+                & riepilogo_visualizzato.loc[maschera_dati, "at"].duplicated(),
                 "at"
             ] = ""
 
@@ -509,7 +514,7 @@ def run():
                 ),
 
                 "TT chiusi": st.column_config.NumberColumn(
-                    "TT trial chiusi",
+                    "TT chiusi",
                     width=105
                 ),
 
@@ -530,12 +535,15 @@ def run():
             # ----------------------------------------------------
             # 8. GRAFICO: PERCENTUALE DI CHIUSURA PER IMPRESA
             # ----------------------------------------------------
+            # Esclude sempre la riga totale dal grafico.
             grafico = riepilogo[
-                riepilogo["at"] != "Totale "
+                riepilogo["at"].astype(str).str.strip().str.casefold()
+                != "totale complessivo"
             ].copy()
 
             if not grafico.empty:
 
+                # Percentuali memorizzate sulla scala 0-100.
                 fig = px.bar(
                     grafico,
                     x="Impresa",
@@ -550,15 +558,41 @@ def run():
                         "per Impresa e AT"
                     ),
                     labels={
-                        " %": "Chiusura",
+                        "Chiusura %": "Chiusura",
                         "Impresa": "Impresa",
                         "at": "AT"
                     }
                 )
 
+                # Grafico più alto e testi delle percentuali leggibili.
+                fig.update_traces(
+                    textposition="outside",
+                    textfont=dict(size=14),
+                    cliponaxis=False
+                )
+
+                massimo = max(
+                    100,
+                    float(grafico["Chiusura %"].max()) * 1.18
+                )
+
                 fig.update_layout(
-                    yaxis_ticksuffix="%",
-                    yaxis_title="Chiusura %"
+                    height=680,
+                    margin=dict(l=55, r=35, t=85, b=150),
+                    yaxis=dict(
+                        title="Chiusura %",
+                        ticksuffix="%",
+                        range=[0, massimo],
+                        dtick=20
+                    ),
+                    xaxis=dict(
+                        title="Impresa",
+                        tickangle=-35,
+                        automargin=True
+                    ),
+                    legend_title_text="AT",
+                    uniformtext_minsize=11,
+                    uniformtext_mode="show"
                 )
 
                 st.plotly_chart(
@@ -566,7 +600,6 @@ def run():
                     use_container_width=True
                 )
 
-            # ----------------------------------------------------
             # 9. DOWNLOAD RIEPILOGO EXCEL
             # ----------------------------------------------------
             output_excel = excel_bytes(
